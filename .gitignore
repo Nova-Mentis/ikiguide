@@ -5,13 +5,20 @@ __pycache__/
 *.log
 .env
 venv/
-env/
-*.env
+
 
 # JavaScript
 node_modules/
 build/
 dist/
+
+# Environment files
+env/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Log files
 logs/

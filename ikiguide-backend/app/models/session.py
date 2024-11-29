@@ -1,10 +1,8 @@
 import uuid
-import logging
+from app.models.logger import logger
 import threading
 from datetime import datetime, timedelta
 from typing import Dict, Optional
-
-logger = logging.getLogger(__name__)
 
 class SessionError(Exception):
     """Custom exception for session-related errors."""
@@ -34,7 +32,7 @@ class SessionManager:
         """
         with self._session_creation_lock:
             try:
-                # Clean up expired sessions
+                # Cleanup expired and old sessions BEFORE creating a new one
                 self._cleanup_expired_sessions()
 
                 # Check if we've reached max sessions
@@ -138,16 +136,33 @@ class SessionManager:
     def _cleanup_expired_sessions(self):
         """
         Remove sessions that have exceeded the timeout.
+        Maintains multiple sessions within the max_sessions limit.
         """
         now = datetime.now()
+        
+        # Remove expired sessions first
         expired_sessions = [
-            sid for sid, session in self._sessions.items()
+            sid for sid, session in list(self._sessions.items())
             if (now - session['created_at']) > timedelta(hours=self._session_timeout)
         ]
         
         for sid in expired_sessions:
             del self._sessions[sid]
             logger.info(f"Cleaned up expired session: {sid}")
+        
+        # If we've exceeded max sessions, remove oldest sessions
+        if len(self._sessions) > self._max_sessions:
+            # Sort sessions by creation time, oldest first
+            sorted_sessions = sorted(
+                self._sessions.items(), 
+                key=lambda x: x[1]['created_at']
+            )
+            
+            # Remove oldest sessions until we're within the limit
+            while len(self._sessions) > self._max_sessions:
+                oldest_sid, _ = sorted_sessions.pop(0)
+                del self._sessions[oldest_sid]
+                logger.info(f"Removed oldest session to maintain max sessions: {oldest_sid}")
 
 class Session:
     def __init__(self, session_id: str, session_data: Dict):

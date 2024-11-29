@@ -15,10 +15,6 @@ const IntroductionPage = () => {
       localStorage.getItem(`${existingSessionId}_response_2`) &&
       localStorage.getItem(`${existingSessionId}_response_3`) &&
       localStorage.getItem(`${existingSessionId}_response_4`);
-
-    if (hasResponses) {
-      setPreviousSessionId(existingSessionId);
-    }
   }, []);
 
   const handleBeginJourney = () => {
@@ -88,14 +84,6 @@ const IntroductionPage = () => {
             <li>What the world needs</li>
             <li>What you can be paid for</li>
           </ul>
-          {previousSessionId && (
-            <p className="mb-4 text-ikigai-black">
-              You have a previous session. 
-              <Link to={`/results/${previousSessionId}`} className="text-ikigai-main hover:text-ikigai-main/90 ml-2">
-                View previous results
-              </Link>
-            </p>
-          )}
           <button 
             onClick={handleBeginJourney}
             className="bg-ikigai-main hover:bg-ikigai-main/90 text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 text-lg"

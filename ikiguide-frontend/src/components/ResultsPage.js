@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
@@ -65,6 +65,11 @@ const ResultsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [paths, setPaths] = useState([]);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailAddress, setEmailAddress] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailStatus, setEmailStatus] = useState(null);
+  const [emailSendAttempts, setEmailSendAttempts] = useState(0);
   const [userResponses, setUserResponses] = useState({
     'What You\'re Good At': '',
     'What You Love': '',
@@ -106,6 +111,178 @@ const ResultsPage = () => {
       // Fallback navigation
       window.location.href = '/';
     }
+  };
+
+  const isValidEmail = (email) => {
+    // Comprehensive email validation
+    if (!email) {
+      console.error(' Email Validation: Email is empty or undefined');
+      return false;
+    }
+
+    const trimmedEmail = String(email).trim();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const isValid = emailRegex.test(trimmedEmail);
+
+    console.log(' Email Validation Details:', {
+      originalEmail: email,
+      trimmedEmail,
+      isValid,
+      attempts: emailSendAttempts
+    });
+
+    return isValid;
+  };
+
+  const emailResults = async (forceEmail) => {
+    console.log('emailResults called with:', {
+      emailAddress,
+      forceEmail,
+      attempts: emailSendAttempts
+    });
+
+    // Increment send attempts
+    setEmailSendAttempts(prev => prev + 1);
+
+    try {
+      // Use forced email if provided, otherwise use state
+      const emailToSend = forceEmail || emailAddress;
+
+      // Validate email
+      if (!isValidEmail(emailToSend)) {
+        console.error(' Invalid email:', emailToSend);
+        setEmailStatus('Please enter a valid email address');
+        return false;
+      }
+
+      // Get session ID
+      const sessionId = localStorage.getItem('ikiguide_session_id');
+      if (!sessionId) {
+        setEmailStatus('No session found. Please restart the process.');
+        return false;
+      }
+
+      // Send email request
+      const response = await axios.post(
+        'http://localhost:8000/api/email_results', 
+        {
+          email: emailToSend.trim(),
+          message: emailMessage
+        },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Handle successful email
+      setEmailStatus('Results sent successfully!');
+      
+      // Close modal after a short delay
+      setTimeout(() => {
+        setShowEmailModal(false);
+        setEmailStatus(null);
+      }, 2000);
+
+      return true;
+
+    } catch (error) {
+      console.error(' Email sending error:', error);
+      setEmailStatus(
+        error.response?.data?.message || 
+        'Failed to send email. Please try again.'
+      );
+      return false;
+    }
+  };
+
+  const EmailModal = () => {
+    const [localEmailAddress, setLocalEmailAddress] = useState('');
+    const [localEmailMessage, setLocalEmailMessage] = useState('');
+
+    useEffect(() => {
+      // Initialize local state when modal opens
+      setLocalEmailAddress(emailAddress);
+      setLocalEmailMessage(emailMessage);
+    }, [showEmailModal, emailAddress, emailMessage]);
+
+    const handleSendEmail = async () => {
+      console.log(' Handle Send Email - Initial State:', {
+        localEmailAddress,
+        localEmailMessage,
+        currentEmailAddress: emailAddress,
+        attempts: emailSendAttempts
+      });
+
+      // Validate local email
+      if (!localEmailAddress) {
+        setEmailStatus('Please enter a valid email address');
+        return;
+      }
+
+      // Update parent state
+      setEmailAddress(localEmailAddress);
+      setEmailMessage(localEmailMessage);
+
+      // Attempt to send email immediately with forced email
+      const sendResult = await emailResults(localEmailAddress);
+      
+      console.log(' Send Result:', sendResult);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+          <h2 className="text-xl font-bold mb-4 text-ikigai-main">
+            Email Your Ikiguide Results
+          </h2>
+          
+          <input 
+            type="email" 
+            placeholder="Your Email Address" 
+            value={localEmailAddress}
+            onChange={(e) => setLocalEmailAddress(e.target.value)}
+            className="w-full p-2 border rounded mb-4"
+            required
+          />
+          
+          <textarea 
+            placeholder="Optional message (optional)" 
+            value={localEmailMessage}
+            onChange={(e) => setLocalEmailMessage(e.target.value)}
+            className="w-full p-2 border rounded mb-4 h-24"
+          />
+          
+          {emailStatus && (
+            <div className={`mb-4 p-2 rounded ${
+              emailStatus.includes('successfully') 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {emailStatus}
+            </div>
+          )}
+          
+          <div className="flex justify-between">
+            <button 
+              onClick={() => setShowEmailModal(false)}
+              className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSendEmail}
+              className="bg-[var(--color-secondary)] text-white px-4 py-2 rounded hover:opacity-80"
+              disabled={emailStatus?.includes('successfully')}
+            >
+              Send Email
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   useEffect(() => {
@@ -183,12 +360,11 @@ const ResultsPage = () => {
           }
         });
 
+        // Ensure we have a paths property
+        const allPaths = response.data.paths || response.data || [];
         console.log('Full API Response:', response.data);
-
-        const allPaths = response.data.paths || [];
         console.log('Raw Paths:', JSON.stringify(allPaths, null, 2));
 
-        // Find summary if needed
         const summaryPath = allPaths.find(path => path.startsWith('SUMMARY:'));
         
         const ikigaiPaths = allPaths.filter(path => 
@@ -292,13 +468,13 @@ const ResultsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-8">
-      <div className="w-full max-w-4xl bg-ikigai-grey/10 p-8 rounded-xl shadow-lg">
+    <div className="min-h-screen bg-white p-6 flex justify-center">
+      <div className="w-full max-w-2xl">
         <h1 className="text-4xl font-bold text-ikigai-main text-center mb-8">Your Ikigai Journey</h1>
         
         <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-2xl font-semibold text-ikigai-main mb-4">Your Inputs</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="font-bold">What You're Good At:</p>
               <p>{userResponses['What You\'re Good At'] || 'Not specified'}</p>
@@ -361,14 +537,22 @@ const ResultsPage = () => {
           })()}
         </div>
 
-        <div className="flex justify-center mt-8">
+        <div className="mt-6 flex flex-col items-center space-y-4">
           <button 
             onClick={startOver}
-            className="px-6 py-3 bg-ikigai-main text-white rounded-lg hover:bg-opacity-90 transition duration-300 ease-in-out shadow-md"
+            className="bg-[var(--color-main)] text-white px-6 py-3 rounded-lg hover:opacity-80 transition duration-300"
           >
             Start Over
           </button>
+          <button 
+            onClick={() => setShowEmailModal(true)}
+            className="bg-[var(--color-secondary)] text-white px-6 py-3 rounded-lg hover:opacity-80 transition duration-300"
+          >
+            Email My Results
+          </button>
         </div>
+
+        {showEmailModal && <EmailModal />}
       </div>
     </div>
   );

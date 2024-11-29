@@ -1,9 +1,13 @@
 fastapi
 uvicorn
-openai
+openai==1.55.3
 python-dotenv
 python-multipart
 requests
 typing-extensions
 sqlalchemy
 databases[sqlite]
+tenacity  # Added for retry mechanism
+asyncio  # Ensure async support
+msal
+cryptography  # Added for secure secret management

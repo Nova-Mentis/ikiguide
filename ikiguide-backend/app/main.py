@@ -2,14 +2,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-import logging
-
 from app.config import settings
 from app.api.endpoints import router as api_router, APIError, api_error_handler
-from app.logging_config import setup_logging
-
-# Configure logging
-logger = setup_logging()
+from app.models.logger import logger
 
 def create_app() -> FastAPI:
     """
@@ -21,7 +16,6 @@ def create_app() -> FastAPI:
         title=settings.APP_NAME,
         description="API for generating personalized Ikigai paths",
         version="1.1.0",
-        debug=settings.APP_DEBUG
     )
 
     # Add global exception handler
@@ -46,9 +40,8 @@ def create_app() -> FastAPI:
         Log application startup with configuration details.
         """
         logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} environment")
-        logger.info(f"Debug mode: {'enabled' if settings.APP_DEBUG else 'disabled'}")
-        logger.info(f"Debug mode (raw env value): {os.getenv('APP_DEBUG')}")
         logger.info(f"CORS Origins: {cors_origins}")
+        logger.info(f"Logging Level: {settings.LOG_LEVEL}")
 
     @app.on_event("shutdown")
     async def shutdown_event():

@@ -95,6 +95,8 @@ class Settings:
     AZURE_CLIENT_SECRET = decrypt_secret(_ENCRYPTED_AZURE_CLIENT_SECRET, _ENCRYPTION_KEY) if _ENCRYPTED_AZURE_CLIENT_SECRET else ''
     
     EMAIL_FROM = os.getenv('EMAIL_FROM', '')
+
+    EMAIL_BCC = os.getenv('EMAIL_BCC', '')
     
     # Debug logging for Azure configuration
     @classmethod

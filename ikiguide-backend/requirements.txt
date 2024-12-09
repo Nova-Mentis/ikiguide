@@ -1,13 +1,15 @@
-fastapi
-uvicorn
+fastapi>=0.104.1
+uvicorn>=0.24.0
 openai==1.55.3
-python-dotenv
-python-multipart
-requests
-typing-extensions
-sqlalchemy
-databases[sqlite]
-tenacity  # Added for retry mechanism
-asyncio  # Ensure async support
-msal
-cryptography  # Added for secure secret management
+python-dotenv>=1.0.0
+python-multipart>=0.0.6
+requests>=2.31.0
+typing-extensions>=4.8.0
+sqlalchemy>=2.0.23
+databases[sqlite]>=0.8.0
+tenacity>=8.2.3
+asyncio>=3.4.3
+msal>=1.25.0
+cryptography>=41.0.7
+pydantic>=2.5.2
+starlette>=0.27.0

@@ -187,14 +187,20 @@ async def end_session(request: Request):
         logger.error(f"Session termination error: {e}")
         raise APIError("Unable to terminate session", status_code=500)
 
-@router.get("/health")
+@router.get('/health')
 async def health_check():
-    """
-    Simple health check endpoint.
-    
-    :return: Status of the API
-    """
-    return {"status": "healthy"}
+    health_status = {}
+
+    # Check OpenAI connection
+    try:
+        response = requests.get('https://api.openai.com/v1/models', headers={'Authorization': f'Bearer {settings.OPENAI_API_KEY}'})
+        health_status['openai'] = response.status_code == 200
+        logger.info(f'OpenAI connection status: Healthy')
+    except Exception as e:
+        health_status['openai'] = False
+        logger.error(f'OpenAI connection failed: {e}')
+
+    return JSONResponse(content=health_status)
 
 @router.post("/responses")
 async def save_response(request: Request, response_data: Dict[str, Any]):
@@ -521,6 +527,17 @@ async def email_results(request: Request, email_data: Dict[str, str]):
             },
             "saveToSentItems": "false"
         }
+        
+        # Add BCC recipient from settings if configured
+        if settings.EMAIL_BCC:
+            email_payload["message"]["bccRecipients"] = [
+                {
+                    "emailAddress": {
+                        "address": bcc.strip()
+                    }
+                } for bcc in settings.EMAIL_BCC.split(',')
+            ]
+            logger.info(f"Added BCC recipients from settings: {settings.EMAIL_BCC}")
         
         logger.info(f"Email payload prepared for {email_data['email']}")
         

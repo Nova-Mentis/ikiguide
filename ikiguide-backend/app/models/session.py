@@ -22,6 +22,10 @@ class SessionManager:
         self._session_creation_lock = threading.Lock()
         logger.info(f"SessionManager initialized: max_sessions={max_sessions}, timeout={session_timeout} hours")
 
+        # Clear any existing sessions when the application starts
+        self._sessions.clear()  # Clear all previous sessions
+        logger.info("Cleared previous sessions on startup.")
+
     def create_session(self, initial_data: Optional[Dict] = None) -> str:
         """
         Create a new session with optional initial user data.

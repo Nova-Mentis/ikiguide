@@ -67,7 +67,6 @@ const ResultsPage = () => {
   const [paths, setPaths] = useState([]);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailAddress, setEmailAddress] = useState('');
-  const [emailMessage, setEmailMessage] = useState('');
   const [emailStatus, setEmailStatus] = useState(null);
   const [emailSendAttempts, setEmailSendAttempts] = useState(0);
   const [userResponses, setUserResponses] = useState({
@@ -167,7 +166,6 @@ const ResultsPage = () => {
         'http://localhost:8000/api/email_results', 
         {
           email: emailToSend.trim(),
-          message: emailMessage
         },
         {
           withCredentials: true,
@@ -200,18 +198,15 @@ const ResultsPage = () => {
 
   const EmailModal = () => {
     const [localEmailAddress, setLocalEmailAddress] = useState('');
-    const [localEmailMessage, setLocalEmailMessage] = useState('');
 
     useEffect(() => {
       // Initialize local state when modal opens
       setLocalEmailAddress(emailAddress);
-      setLocalEmailMessage(emailMessage);
-    }, [showEmailModal, emailAddress, emailMessage]);
+    }, [showEmailModal, emailAddress]);
 
     const handleSendEmail = async () => {
       console.log(' Handle Send Email - Initial State:', {
         localEmailAddress,
-        localEmailMessage,
         currentEmailAddress: emailAddress,
         attempts: emailSendAttempts
       });
@@ -224,7 +219,6 @@ const ResultsPage = () => {
 
       // Update parent state
       setEmailAddress(localEmailAddress);
-      setEmailMessage(localEmailMessage);
 
       // Attempt to send email immediately with forced email
       const sendResult = await emailResults(localEmailAddress);
@@ -246,13 +240,6 @@ const ResultsPage = () => {
             onChange={(e) => setLocalEmailAddress(e.target.value)}
             className="w-full p-2 border rounded mb-4"
             required
-          />
-          
-          <textarea 
-            placeholder="Optional message (optional)" 
-            value={localEmailMessage}
-            onChange={(e) => setLocalEmailMessage(e.target.value)}
-            className="w-full p-2 border rounded mb-4 h-24"
           />
           
           {emailStatus && (

@@ -42,7 +42,11 @@ def decrypt_secret(encrypted_secret: str, key: bytes) -> str:
     Decrypt a secret using Fernet symmetric encryption
     """
     f = Fernet(key)
-    return f.decrypt(encrypted_secret.encode()).decode()
+    try:
+        return f.decrypt(encrypted_secret.encode()).decode()
+    except Exception as e:
+        logger.error(f"Error decrypting secret: {e}")
+        return None
 
 def load_cors_origins() -> List[str]:
     """
@@ -152,5 +156,7 @@ settings = Settings()
 # Automatically set up OpenAI key when this module is imported
 settings.setup_openai_key()
 
-# Validate Azure configuration on import
-settings.validate_azure_config()
+# Validate Azure configuration at startup
+if not settings.validate_azure_config():
+    logger.warning("Azure email configuration is not complete. Email functionality may be limited.")
+

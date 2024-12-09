@@ -377,9 +377,6 @@ async def email_results(request: Request, email_data: Dict[str, str]):
     :param email_data: Dictionary containing email and optional message
     :return: Email sending status
     """
-
-    # TODO Fix this
-    
     try:
         # Get session ID (synchronous call)
         session_id = get_session_id(request)
@@ -397,10 +394,14 @@ async def email_results(request: Request, email_data: Dict[str, str]):
         client_secret = settings.AZURE_CLIENT_SECRET
         sender_email = settings.EMAIL_FROM
         
-        # Validate Azure configuration
-        if not all([tenant_id, client_id, client_secret, sender_email]):
-            logger.error("Incomplete Azure AD configuration")
-            raise APIError("Azure AD configuration is incomplete", status_code=500)
+        # Validate Azure configuration with detailed logging
+        if not settings.validate_azure_config():
+            logger.error("Azure configuration validation failed")
+            logger.error(f"Tenant ID present: {bool(tenant_id)}")
+            logger.error(f"Client ID present: {bool(client_id)}")
+            logger.error(f"Client Secret present: {bool(client_secret)}")
+            logger.error(f"Sender Email present: {bool(sender_email)}")
+            raise APIError("Azure AD configuration is incomplete or invalid", status_code=500)
         
         logger.info(f"Attempting to send email. Sender: {sender_email}, Recipient: {email_data['email']}")
         
@@ -438,19 +439,74 @@ async def email_results(request: Request, email_data: Dict[str, str]):
         except Exception as token_error:
             logger.error(f"Token acquisition exception: {str(token_error)}", exc_info=True)
             raise APIError(f"Token acquisition failed: {str(token_error)}", status_code=500)
-        
+
         # Prepare email payload
+        # Extract paths and summary
+        paths = []
+        summary = ""
+        for i in range(0, len(results["paths"]), 2):
+            if results["paths"][i] == "SUMMARY":
+                summary = results["paths"][i + 1]
+                break
+            paths.append({
+                "title": results["paths"][i],
+                "description": results["paths"][i + 1]
+            })
+
         email_payload = {
             "message": {
-                "subject": "Your Ikiguide Results",
+                "subject": "Your Ikiguide Career Path Results",
                 "body": {
                     "contentType": "HTML",
                     "content": f"""
                     <html>
-                    <body>
-                    <h2>Your Ikiguide Results</h2>
-                    <pre>{json.dumps(results, indent=2)}</pre>
-                    {f'<p><strong>Additional Message:</strong> {email_data.get("message", "")}</p>' if email_data.get("message") else ''}
+                    <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; color: #232222;">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <img src="https://www.nova-mentis.com/web/image/website/1/logo/Nova%20Mentis?unique=3cdc8f3" alt="Nova Mentis Logo" style="max-width: 200px; margin-bottom: 20px;">
+                            <h1 style="color: #37715B; font-size: 28px;">Your Ikiguide Journey</h1>
+                            <p style="color: #5C7C95;">Discovering Your Perfect Career Path</p>
+                        </div>
+                        
+                        <div style="background: linear-gradient(to right, #f8f9fa, #e9ecef); padding: 25px; border-radius: 12px; margin-bottom: 35px; border: 1px solid #37715B;">
+                            <h2 style="color: #37715B; font-size: 22px; margin-top: 0;">Your Ikigai Elements</h2>
+                            <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                                <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <p style="margin: 0;"><span style="color: #37715B; font-weight: bold;">What you are good at:</span><br>
+                                    {results["user_responses"]["good_at"]}</p>
+                                </div>
+                                <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <p style="margin: 0;"><span style="color: #D5AF37; font-weight: bold;">What you love doing:</span><br>
+                                    {results["user_responses"]["love"]}</p>
+                                </div>
+                                <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <p style="margin: 0;"><span style="color: #A14B2A; font-weight: bold;">What the world needs:</span><br>
+                                    {results["user_responses"]["world_needs"]}</p>
+                                </div>
+                                <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <p style="margin: 0;"><span style="color: #9A6FB0; font-weight: bold;">What you can be paid for:</span><br>
+                                    {results["user_responses"]["paid_for"]}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2 style="color: #37715B; font-size: 24px; margin-bottom: 20px;">Recommended Career Paths</h2>
+                        {"".join([f'''
+                        <div style="margin-bottom: 25px; padding: 25px; background-color: white; border-radius: 12px; box-shadow: 0 3px 6px rgba(0,0,0,0.1); border: 1px solid #D5AF37;">
+                            <h3 style="color: #37715B; margin-top: 0; font-size: 20px; border-bottom: 2px solid #D5AF37; padding-bottom: 10px;">{path["title"]}</h3>
+                            <p style="color: #232222; line-height: 1.8; margin: 15px 0 0 0;">{path["description"]}</p>
+                        </div>
+                        ''' for path in paths])}
+
+                        <div style="background: linear-gradient(to right, #f8f9fa, #e9ecef); padding: 25px; border-radius: 12px; margin-top: 35px; border: 1px solid #37715B;">
+                            <h2 style="color: #37715B; font-size: 22px; margin-top: 0;">Summary</h2>
+                            <p style="color: #232222; line-height: 1.8; margin: 15px 0 0 0;">{summary}</p>
+                        </div>
+
+                        {f'<div style="margin-top: 35px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #5C7C95;"><p style="margin: 0;"><strong style="color: #37715B;">Additional Note:</strong> {email_data.get("message", "")}</p></div>' if email_data.get("message") else ''}
+                        
+                        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #D5AF37;">
+                            <p style="color: #5C7C95; font-size: 14px;">Brought to you by the Nova Mentis team</p>
+                        </div>
                     </body>
                     </html>
                     """
@@ -463,7 +519,7 @@ async def email_results(request: Request, email_data: Dict[str, str]):
                     }
                 ]
             },
-            "saveToSentItems": "false"  # Explicitly set to avoid permission issues
+            "saveToSentItems": "false"
         }
         
         logger.info(f"Email payload prepared for {email_data['email']}")

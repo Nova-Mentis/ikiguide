@@ -1,21 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios'; // Import axios
 import ikigaiDiagram from '../assets/ikigai-diagram.png';  
 
 const IntroductionPage = () => {
   const navigate = useNavigate();
-  const [previousSessionId, setPreviousSessionId] = useState(null);
-
-  useEffect(() => {
-    // Check for existing session results
-    const existingSessionId = localStorage.getItem('ikiguide_session_id');
-    const hasResponses = existingSessionId && 
-      localStorage.getItem(`${existingSessionId}_response_1`) &&
-      localStorage.getItem(`${existingSessionId}_response_2`) &&
-      localStorage.getItem(`${existingSessionId}_response_3`) &&
-      localStorage.getItem(`${existingSessionId}_response_4`);
-  }, []);
 
   const handleBeginJourney = () => {
     console.log('Begin journey button clicked');

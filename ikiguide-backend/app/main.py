@@ -75,5 +75,4 @@ if __name__ == "__main__":
         "main:app", 
         host=settings.API_HOST, 
         port=settings.API_PORT, 
-        reload=settings.APP_DEBUG
     )

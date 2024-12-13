@@ -1,7 +1,7 @@
 import os
 import base64
 import secrets
-from typing import List
+from typing import List, Optional
 import dotenv
 import logging
 
@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 # Set up logging
 logger = logging.getLogger(__name__)
 
-def generate_key(password: str, salt: bytes = None) -> bytes:
+def generate_key(password: str, salt: Optional[bytes] = None) -> bytes:
     """
     Generate a consistent encryption key
     """
@@ -37,7 +37,7 @@ def encrypt_secret(secret: str, key: bytes) -> str:
     f = Fernet(key)
     return f.encrypt(secret.encode()).decode()
 
-def decrypt_secret(encrypted_secret: str, key: bytes) -> str:
+def decrypt_secret(encrypted_secret: str, key: bytes) -> Optional[str]:
     """
     Decrypt a secret using Fernet symmetric encryption
     """
@@ -161,4 +161,3 @@ settings.setup_openai_key()
 # Validate Azure configuration at startup
 if not settings.validate_azure_config():
     logger.warning("Azure email configuration is not complete. Email functionality may be limited.")
-

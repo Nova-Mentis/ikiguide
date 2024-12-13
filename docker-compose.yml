@@ -21,5 +21,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+      - "443:443"
     volumes:
       - ./ikiguide-frontend:/app

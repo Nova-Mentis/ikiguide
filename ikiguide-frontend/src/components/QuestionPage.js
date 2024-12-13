@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import DOMPurify from 'dompurify';
 
 const questions = [
   "What are you good at?",
@@ -56,7 +57,7 @@ const QuestionPage = () => {
   };
 
   // Use sessionId from URL, fallback to cookie, then localStorage
-  const [currentSessionId, setCurrentSessionId] = useState(
+  const [currentSessionId] = useState(
     sessionId || getSessionIdFromCookie() || localStorage.getItem('ikiguide_session_id')
   );
 
@@ -92,33 +93,30 @@ const QuestionPage = () => {
       return;
     }
 
-    // Ensure we have a session ID
     if (!currentSessionId) {
       setError("Session error. Please refresh the page.");
       return;
     }
 
     try {
-      // Send response with session ID
-      const responsePost = await axios.post('http://localhost:8000/api/responses', {
+      // Sanitize response before sending
+      const sanitizedResponse = DOMPurify.sanitize(response.trim());
+
+      await axios.post('http://localhost:8000/api/responses', {
         session_id: currentSessionId,
-        question_id: questionIndex + 1, 
-        response: response.trim()
+        question_id: questionIndex + 1,
+        response: sanitizedResponse
       }, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json'
         }
       });
-      
-      // Store response in localStorage
-      localStorage.setItem(`${currentSessionId}_response_${questionIndex + 1}`, response.trim());
-      
-      // Explicitly set session ID in localStorage and cookies
+
+      localStorage.setItem(`${currentSessionId}_response_${questionIndex + 1}`, sanitizedResponse);
       localStorage.setItem('ikiguide_session_id', currentSessionId);
       document.cookie = `session_id=${currentSessionId}; path=/; SameSite=Lax`;
 
-      // Navigate to next question or results
       if (questionIndex < 3) {
         navigate(`/question/${questionIndex + 2}/${currentSessionId}`);
       } else {
@@ -126,12 +124,9 @@ const QuestionPage = () => {
       }
     } catch (error) {
       console.error('Error submitting response:', error);
-      
-      // More detailed error handling
       const errorMessage = error.response 
         ? error.response.data.detail || 'Failed to submit response. Please try again.'
         : 'Network error. Please check your connection.';
-      
       setError(errorMessage);
     }
   };

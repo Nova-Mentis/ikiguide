@@ -22,7 +22,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(APIError, api_error_handler)
 
     # Configure CORS with more robust handling
-    cors_origins = settings.CORS_ORIGINS or ["http://localhost:3000"]
+    cors_origins = settings.CORS_ORIGINS or ["http://0.0.0.0:3000"]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,

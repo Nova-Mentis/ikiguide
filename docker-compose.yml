@@ -1,13 +1,11 @@
 services:
   backend:
-    image: localhugdealer/ikiguide-backend:latest
+    image: ghcr.io/nova-mentis/ikiguide/ikiguide-backend:latest
     container_name: ikiguide-backend
     ports:
       - "8000:8000"
     environment:
       - ENVIRONMENT=production
-    volumes:
-      - ./ikiguide-backend:/app
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8000/api/health"]
       interval: 30s
@@ -17,13 +15,12 @@ services:
       - ikiguide-network
 
   frontend:
-    image: localhugdealer/ikiguide-frontend:latest
+    image: ghcr.io/nova-mentis/ikiguide/ikiguide-frontend:latest
     container_name: ikiguide-frontend
     ports:
       - "3000:3000"
       - "443:443"
     volumes:
-      - ./ikiguide-frontend:/app
       - /etc/letsencrypt/live/ikiguide.nova-mentis.com:/etc/letsencrypt/live/ikiguide.nova-mentis.com:ro
       - /etc/letsencrypt/archive/ikiguide.nova-mentis.com:/etc/letsencrypt/archive/ikiguide.nova-mentis.com:ro
     depends_on:

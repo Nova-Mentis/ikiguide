@@ -25,3 +25,7 @@ EXPOSE 3000
 
 # Command to serve the build with HTTPS
 CMD sh -c "serve -s build -l 443 --ssl-cert /etc/letsencrypt/live/ikiguide.nova-mentis.com/cert.pem --ssl-key /etc/letsencrypt/live/ikiguide.nova-mentis.com/privkey.pem & serve -s build -l 3000"
+
+# Set labels for Docker Hub 
+LABEL org.opencontainers.image.source="https://github.com/Nova-Mentis/ikiguide"
+LABEL org.opencontainers.image.title="ikiguide-frontend"

@@ -47,3 +47,7 @@ HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl --fail http://loca
 
 # Command to run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Set labels for Docker Hub 
+LABEL org.opencontainers.image.source="https://github.com/Nova-Mentis/ikiguide"
+LABEL org.opencontainers.image.title="ikiguide-backend"

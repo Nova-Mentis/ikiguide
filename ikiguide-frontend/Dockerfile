@@ -21,6 +21,7 @@ RUN npm install -g serve
 
 # Expose the port the app runs on
 EXPOSE 443
+EXPOSE 3000
 
 # Command to serve the build with HTTPS
-CMD ["serve", "-s", "build", "-l", "443", "--ssl-cert", "/etc/letsencrypt/live/ikiguide.nova-mentis.com/cert.pem", "--ssl-key", "/etc/letsencrypt/live/ikiguide.nova-mentis.com/privkey.pem"]
+CMD sh -c "serve -s build -l 443 --ssl-cert /etc/letsencrypt/live/ikiguide.nova-mentis.com/cert.pem --ssl-key /etc/letsencrypt/live/ikiguide.nova-mentis.com/privkey.pem & serve -s build -l 3000"

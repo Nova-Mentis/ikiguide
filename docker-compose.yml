@@ -1,8 +1,7 @@
 services:
   backend:
-    build:
-      context: ./ikiguide-backend
-      dockerfile: Dockerfile
+    image: localhugdealer/ikiguide-backend:latest
+    container_name: ikiguide-backend
     ports:
       - "8000:8000"
     environment:
@@ -14,13 +13,24 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - ikiguide-network
 
   frontend:
-    build:
-      context: ./ikiguide-frontend
-      dockerfile: Dockerfile
+    image: localhugdealer/ikiguide-frontend:latest
+    container_name: ikiguide-frontend
     ports:
       - "3000:3000"
       - "443:443"
     volumes:
       - ./ikiguide-frontend:/app
+      - /etc/letsencrypt/live/ikiguide.nova-mentis.com:/etc/letsencrypt/live/ikiguide.nova-mentis.com:ro
+      - /etc/letsencrypt/archive/ikiguide.nova-mentis.com:/etc/letsencrypt/archive/ikiguide.nova-mentis.com:ro
+    depends_on:
+      - backend
+    networks:
+      - ikiguide-network
+
+networks:
+  ikiguide-network:
+    driver: bridge
